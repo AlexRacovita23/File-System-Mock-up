@@ -58,39 +58,6 @@ void DistrArb(TArb *a) /* distruge toate nodurile arborelui de la adresa a */
 	*a = NULL;               /* arborele este vid */
 }
 
-int rm(TFArb *a, char *nume)
-{
-	if(!a)
-		return NULL;
-	TFArb aux, p, n;
-	int contor;
-	n = *a;
-	while(n){
-		if(strcmp(nume, n->nume) == 0){
-			contor+=1;
-			break;
-		}
-		p = n;
-		if(strcmp(nume, n->nume) < 0)
-			n = n->st;
-		else	
-			n = n->dr;
-	}
-	if (contor == 0)
-		return 0;
-
-
-
-
-
-
-
-
-
-
-
-
-}
 
 int NrNoduri(TArb r)        /* numarul de noduri din arborele r -*/
 {
