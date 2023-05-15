@@ -1,18 +1,8 @@
+/* RACOVITA Alexandru Catalin - grupa 312CB */
+
 #include "Tarb.h"
 
-
-
-TArb ConstrNod(TInfo x, TArb s, TArb d)/* -> adresa nod (cu informatia x, 
-				fiu stanga s, fiu dreapta d) sau NULL in caz de eroare */
-{
-	TArb aux = (TArb)malloc (sizeof(TNod));  /* incearca alocare spatiu */
-	if (!aux) return NULL;                   /* spatiu insuficient */
-	aux->info = x; aux->st = s; aux->dr = d; /* actualizeaza campurile nodului */
-
-	return aux;                              /* intoarce adresa nodului */
-}
-
-TArb ConstrFr(TInfo x)     /* -> adresa frunza cu informatia x, sau
+TArb constr_fr(TInfo x)     /* -> adresa frunza cu informatia x, sau
 					NULL daca nu exista spatiu */
 {
 	TArb aux = (TArb)malloc (sizeof(TNod));
@@ -22,42 +12,139 @@ TArb ConstrFr(TInfo x)     /* -> adresa frunza cu informatia x, sau
 	return aux;
 }
 
-TFArb ConstrFrF(char *x)     /* -> adresa frunza cu informatia x, sau
-					NULL daca nu exista spatiu */
+TFArb constr_fr_f(char *x) 
 {
 	TFArb aux = (TFArb)malloc (sizeof(TFisier));
 	if (!aux) return NULL;
-	aux->nume = x; aux->st = aux->dr = NULL;
+	aux->nume = malloc(sizeof(x) + 1);
+	memmove(aux->nume, x, strlen(x)+1);
+	aux->st = aux->dr = NULL;
 	return aux;
 }
 
-TDArb ConstrFrDir(char *x)     /* -> adresa frunza cu informatia x, sau
-					NULL daca nu exista spatiu */
+TDArb constr_fr_dir(char *x, TDArb parinte)
 {
 	TDArb aux = (TDArb)malloc (sizeof(TDirector));
 	if (!aux) return NULL;
-	aux->nume = x; aux->st = aux->dr = NULL;
+	aux->nume = malloc(sizeof(x)+1);
+	memmove(aux->nume, x, strlen(x)+1);
+	aux->st = aux->dr = NULL;
 	aux->directories = NULL;
 	aux->fisiere = NULL;
+	aux->parinte = parinte;
 
 	return aux;
 }
 
-void DistrSubarb(TArb r) 	/* functie auxiliara - distruge toate nodurile */
-{
+void distr_subarb_fisiere(TFArb r) 	/* functie auxiliara - distruge toate fisierele */
+{	
 	if (!r) return;
-	DistrSubarb (r->st);     /* distruge subarborele stang */
-	DistrSubarb (r->dr);     /* distruge subarborele drept */
+	distr_subarb_fisiere (r->st);     /* distruge subarborele stang */
+	distr_subarb_fisiere (r->dr);     /* distruge subarborele drept */
+	free(r->nume);
 	free (r);             /* distruge nodul radacina */
 }
 
-void DistrArb(TArb *a) /* distruge toate nodurile arborelui de la adresa a */
+void distr_arb_fisiere(TFArb *a) /* distruge toate nodurile arborelui de la adresa a */
 {
 	if (!(*a)) return;       /* arbore deja vid */
-	DistrSubarb (*a);           /* distruge toate nodurile */
+	distr_subarb_fisiere (*a);           /* distruge toate nodurile */
 	*a = NULL;               /* arborele este vid */
 }
 
+void distr_subarb_directoare(TDArb r) 	/* functie auxiliara - distruge toate directoarele */
+{
+	if (!r) return;
+	distr_subarb_directoare (r->st);     /* distruge subarborele stang */
+	distr_subarb_directoare (r->dr);     /* distruge subarborele drept */
+	distr_arb_fisiere(&(r->fisiere));
+	distr_arb_directoare(&(r->directories));
+	free(r->nume);
+	free (r);             /* distruge nodul radacina */
+}
+
+void distr_arb_directoare(TDArb *a) /* distruge toate nodurile arborelui de la adresa a */
+{
+	if (!(*a)) return;       /* arbore deja vid */
+	distr_subarb_directoare (*a);           /* distruge toate nodurile */
+	*a = NULL;               /* arborele este vid */
+}
+
+TFArb rm(TFArb a, char *nume, int *contor)
+{
+    if (a == NULL)
+        return a;
+ 
+    if (strcmp(nume, a->nume) < 0)
+        a->st = rm(a->st, nume, contor);
+ 
+    else if (strcmp(nume, a->nume) > 0)
+        a->dr = rm(a->dr, nume, contor);
+ 
+    else {
+		*contor+=1;
+        if (a->st == NULL || a->dr == NULL) {
+			TFArb temp;
+			if(a->st == NULL)
+            	temp = a->dr;
+			else
+				temp = a->st;
+			free(a->nume);
+            free(a);
+            return temp;
+        }
+ 
+        TFArb temp;
+		temp = a->st;
+		while(temp->dr){
+			temp = temp->dr;
+		}
+
+		strcpy(a->nume, temp->nume);
+        a->st = rm(a->st, temp->nume, contor);
+
+    	}
+
+    return a;
+
+}
+
+
+TDArb rmdir(TDArb a, char *nume, int *contor)
+{
+    if (!a)
+        return a;
+ 
+    if (strcmp(nume, a->nume) < 0)
+        a->st = rmdir(a->st, nume, contor);
+
+    else if (strcmp(nume, a->nume) > 0)
+        a->dr = rmdir(a->dr, nume, contor);
+
+    else {
+		*contor+=1;
+        if (a->st == NULL || a->dr == NULL) {
+			TDArb temp;
+			if(a->st == NULL)
+            	temp = a->dr;
+			else
+				temp = a->st;
+			distr_arb_fisiere(&(a->fisiere));
+			distr_arb_directoare(&(a->directories));
+            free(a->nume);
+			free(a);
+            return temp;
+        }
+        TDArb temp;
+		temp = a->st;
+			while(temp->dr){
+				temp = temp->dr;
+			}
+		strcpy(a->nume, temp->nume);
+        a->st = rmdir(a->st, temp->nume, contor);
+    	}
+    return a;
+}
 
 int NrNoduri(TArb r)        /* numarul de noduri din arborele r -*/
 {
